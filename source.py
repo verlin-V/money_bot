@@ -31,6 +31,7 @@ def add_user(telegram_id: int) -> int:
 
     return telegram_id_to_user_id(telegram_id)
 
+
 def telegram_id_to_user_id(telegram_id: int):
     with conn.cursor() as cur:
         cur.execute(
@@ -41,7 +42,6 @@ def telegram_id_to_user_id(telegram_id: int):
         )
         user_id = cur.fetchone()[0]
     return user_id
-
 
 
 def add_transaction(user_id: int, is_income: bool, value: Decimal):
