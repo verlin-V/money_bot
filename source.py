@@ -57,10 +57,20 @@ def add_transaction(user_id: int, is_income: bool, value: Decimal):
 
 def _update_user_balance(user_id: int, is_income: bool, value: Decimal):
     balance = get_user_balance(user_id)
-    if is_income == True:
-        balance+=value
+    if is_income:
+        balance += value
     else:
-        balance-=value
+        balance -= value
+
+    with conn.cursor() as cur:
+        cur.execute(
+            f'''
+            UPDATE user
+            SET balance = {balance}
+            WHERE id = {user_id}
+            '''
+        )
+
 
 def get_transactions_history(user_id: int):
      with conn.cursor() as cur:
