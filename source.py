@@ -73,15 +73,14 @@ def _update_user_balance(user_id: int, is_income: bool, value: Decimal):
 
 
 def get_transactions_history(user_id: int):
-     with conn.cursor() as cur:
+    with conn.cursor() as cur:
         cur.execute(
             f'''
-            SELECT balance FROM "user"
-            WHERE user_id = {user_id};
-            '''
+           SELECT balance FROM "user"
+           WHERE user_id = {user_id};
+           '''
         )
-        transactions_history = cur.fetchall()
-        return transactions_history
+        return cur.fetchall()
 
 
 def get_user_balance(user_id: int):
