@@ -40,8 +40,7 @@ def telegram_id_to_user_id(telegram_id: int):
             WHERE telegram_id = {telegram_id};
             '''
         )
-        user_id = cur.fetchone()[0]
-    return user_id
+        return cur.fetchone()[0]
 
 
 def add_transaction(user_id: int, is_income: bool, value: Decimal):
@@ -91,8 +90,7 @@ def get_user_balance(user_id: int):
             WHERE user_id = {user_id};
             '''
         )
-        user_balance = cur.fetchone()[0]
-    return user_balance
+        return cur.fetchone()[0]
 
 
 if __name__ == '__main__':
