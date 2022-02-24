@@ -6,6 +6,7 @@ from source import (
 	telegram_id_to_user_id,
 	add_transaction,
 	get_user_balance,
+	get_transactions_history,
 )
 import random
 
@@ -15,6 +16,7 @@ def _run_sql(sql, fetch=False):
 		cur.execute(sql)
 		if fetch:
 			return cur.fetchall()
+
 
 def _generate_telegram_id():
 	return random.randint(100000, 999999)
@@ -33,8 +35,6 @@ class DBMethodsTestCase(TestCase):
 		)[0][0]
 		self.value = decimal.Decimal(random.randrange(1, 999999))/100
 		self.is_income = random.choice([True, False])
-
-		# TODO: add several transactions to user for testing history and balance
 
 	def test_add_user_adds_user(self):
 		sql_code = 'SELECT COUNT(*) FROM "user"'
@@ -73,6 +73,10 @@ class DBMethodsTestCase(TestCase):
 
 	def test_get_transactions_history_returns_history_for_specific_user(self):
 		sql_code = (
-			f'SELECT value, is_income FROM "transactions" '
+			f'SELECT value, is_income FROM "transaction" '
 			f'WHERE user_id = {self.user_id}'
+		)
+		self.assertEqual(
+			get_transactions_history(self.user_id),
+			_run_sql(sql_code, True)
 		)
