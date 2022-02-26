@@ -2,6 +2,9 @@ import decimal
 import random
 from unittest import TestCase
 
+from dotenv import load_dotenv
+load_dotenv('env/.test_env')
+
 from utils import (
 	conn,
 	add_user,

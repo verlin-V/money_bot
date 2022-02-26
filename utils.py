@@ -1,12 +1,13 @@
+import os
 from decimal import Decimal
 
 import psycopg2
 
 conn = psycopg2.connect(
-    host="localhost",
-    database="moneyflow",
-    user="postgres",
-    password="postgres",
+    host=os.environ['DB_HOST'],
+    database=os.environ['DB_DATABASE'],
+    user=os.environ['DB_USER'],
+    password=os.environ['DB_PASSWORD'],
 )
 conn.autocommit = True
 
