@@ -1,5 +1,7 @@
 import decimal
+import random
 from unittest import TestCase
+
 from source import (
 	conn,
 	add_user,
@@ -8,7 +10,6 @@ from source import (
 	get_user_balance,
 	get_transactions_history,
 )
-import random
 
 
 def _run_sql(sql, fetch=False):
@@ -64,7 +65,9 @@ class DBMethodsTestCase(TestCase):
 
 	def test_add_transaction_adds_transaction_to_specific_user(self):
 		sql_code = (
-			f'SELECT COUNT(*) FROM "transaction" WHERE user_id = {self.user_id}'
+			f'SELECT COUNT(*) FROM "transaction" '
+			f'WHERE user_id = {self.user_id} AND is_income = {self.is_income} '
+			f'AND value = {self.value}'
 		)
 		transaction_count = _run_sql(sql_code, True)[0][0]
 		add_transaction(self.user_id, self.is_income, self.value)
