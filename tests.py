@@ -54,8 +54,23 @@ class DBMethodsTestCase(TestCase):
 		users_count_upd = _run_sql(sql_code, True)[0][0]
 		self.assertEqual(users_count + 1, users_count_upd)
 
-	def test_telegram_id_to_user_id_returns_expected_user_id(self):
+	def test_telegram_id_to_user_id_for_existing_user(self):
 		self.assertEqual(telegram_id_to_user_id(self.telegram_id), self.user_id)
+
+	def test_telegram_id_to_user_id_for_not_existing_user(self):
+		sql_code = 'SELECT id from "user" WHERE telegram_id = {} LIMIT 1;'
+
+		user_exists = True
+		while user_exists:
+			telegram_id = _generate_telegram_id()
+			user_exists = bool(_run_sql(sql_code.format(telegram_id), True))
+
+		user_id = telegram_id_to_user_id(telegram_id)
+
+		self.assertEqual(
+			user_id,
+			_run_sql(sql_code.format(telegram_id), True)[0][0]
+		)
 
 	def test_get_user_balance_returns_correct_balance_for_specific_user(self):
 		sql_code = (f'SELECT balance FROM "user" WHERE id = {self.user_id}')

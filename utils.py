@@ -28,10 +28,16 @@ def telegram_id_to_user_id(telegram_id: int):
         cur.execute(
             f'''
             SELECT id from "user"
-            WHERE telegram_id = {telegram_id};
+            WHERE telegram_id = {telegram_id}
+            LIMIT 1;
             '''
         )
-        return cur.fetchone()[0]
+        user_id = cur.fetchone()
+
+    if user_id:
+        return user_id[0]
+
+    return add_user(telegram_id)
 
 
 def add_transaction(user_id: int, is_income: bool, value: Decimal):
