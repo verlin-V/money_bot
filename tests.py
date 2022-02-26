@@ -2,7 +2,7 @@ import decimal
 import random
 from unittest import TestCase
 
-from source import (
+from utils import (
 	conn,
 	add_user,
 	telegram_id_to_user_id,
