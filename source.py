@@ -11,16 +11,6 @@ conn = psycopg2.connect(
 conn.autocommit = True
 
 
-# cur = conn.cursor()
-
-# cur.execute('select * from "user";')
-# # cur.execute('insert to "user" (telegram_id), ({})'.format())
-# print(*cur.fetchall())
-# # print(*cur.fetchone())
-
-# cur.close()
-
-
 def add_user(telegram_id: int) -> int:
     with conn.cursor() as cur:
         cur.execute(
@@ -92,8 +82,3 @@ def get_user_balance(user_id: int):
             '''
         )
         return Decimal(cur.fetchone()[0])
-
-if __name__ == '__main__':
-    user_id = add_user(telegram_id=5679)
-    print(user_id)
-    conn.close()
