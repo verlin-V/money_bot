@@ -88,9 +88,18 @@ class DBMethodsTestCase(TestCase):
 			f'AND value = {self.value}'
 		)
 		transaction_count = _run_sql(sql_code, True)[0][0]
+		user_balance_sql = (
+			f'SELECT balance FROM "user" WHERE id = {self.user_id}'
+		)
+		user_balance = _run_sql(user_balance_sql, True)[0][0]
+
 		add_transaction(self.user_id, self.is_income, self.value)
 		transaction_count_upd = _run_sql(sql_code, True)[0][0]
 		self.assertEqual(transaction_count + 1, transaction_count_upd)
+		self.assertEqual(
+			user_balance + self.value * (-1, 1)[int(self.is_income)],
+			_run_sql(user_balance_sql, True)[0][0]
+		)
 
 	def test_get_transactions_history_returns_history_for_specific_user(self):
 		sql_code = (
