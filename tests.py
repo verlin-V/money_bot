@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import decimal
 import random
 from unittest import TestCase
@@ -13,6 +14,7 @@ from utils import (
     add_transaction,
     get_user_balance,
     get_transactions_history,
+    delete_transaction,
 )
 
 
@@ -110,4 +112,37 @@ class DBMethodsTestCase(TestCase):
         self.assertEqual(
             get_transactions_history(self.user_id),
             _run_sql(sql_code, True)
+        )
+
+    def test_delete_transaction_deletes_specific_transaction(self):
+        timestamp = datetime.now(timezone.utc)
+        _run_sql(
+            f'''
+            INSERT INTO "transaction" (user_id, "value", is_income, date_time)
+            VALUES (
+                {self.user_id},
+                {self.value},
+                {self.is_income},
+                '{timestamp}'
+            )
+            '''
+        )
+        transaction_id = _run_sql(
+            f'''
+            SELECT "id" FROM transaction
+            WHERE date_time = '{timestamp}' and user_id = {self.user_id}
+            LIMIT 1
+            ''',
+            True
+        )[0][0]
+
+        delete_transaction(transaction_id)
+
+        self.assertFalse(
+            _run_sql(
+                f'''SELECT * FROM transaction
+                WHERE id = {transaction_id}
+                ''',
+                True
+            )
         )

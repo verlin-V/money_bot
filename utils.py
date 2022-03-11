@@ -89,3 +89,13 @@ def get_user_balance(user_id: int):
             '''
         )
         return Decimal(cur.fetchone()[0])
+
+
+def delete_transaction(transaction_id: int):
+    with conn.cursor() as cur:
+        cur.execute(
+            f'''
+            DELETE FROM transaction
+            WHERE id = {transaction_id}
+            '''
+        )
