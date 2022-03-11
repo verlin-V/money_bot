@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import decimal
 import random
 from unittest import TestCase
@@ -17,6 +17,7 @@ from utils import (
     get_user_balance,
     get_transactions_history,
     delete_transaction,
+    get_user_last_transaction_id,
 )
 
 
@@ -32,6 +33,15 @@ def _generate_telegram_id():
 
 
 class DBMethodsTestCase(TestCase):
+    SQL_FORMAT_ADD_TRANSACTION = '''
+        INSERT INTO "transaction" (user_id, "value", is_income, date_time)
+        VALUES ({}, {}, {}, '{}')
+    '''
+    SQL_FORMAT_GET_TRANSACTION_ID = '''
+        SELECT "id" FROM transaction
+        WHERE date_time = '{}' and user_id = {}
+        LIMIT 1
+    '''
 
     def setUp(self):
         self.telegram_id = _generate_telegram_id()
@@ -118,23 +128,14 @@ class DBMethodsTestCase(TestCase):
 
     def test_delete_transaction_deletes_specific_transaction(self):
         timestamp = datetime.now(timezone.utc)
-        _run_sql(
-            f'''
-            INSERT INTO "transaction" (user_id, "value", is_income, date_time)
-            VALUES (
-                {self.user_id},
-                {self.value},
-                {self.is_income},
-                '{timestamp}'
-            )
-            '''
-        )
+        _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
+            self.user_id,
+            self.value,
+            self.is_income,
+            timestamp
+        ))
         transaction_id = _run_sql(
-            f'''
-            SELECT "id" FROM transaction
-            WHERE date_time = '{timestamp}' and user_id = {self.user_id}
-            LIMIT 1
-            ''',
+            self.SQL_FORMAT_GET_TRANSACTION_ID.format(timestamp, self.user_id),
             True
         )[0][0]
 
@@ -180,3 +181,23 @@ class DBMethodsTestCase(TestCase):
                     bool(re.match(DECIMAL_PATTERN, item)),
                     result
                 )
+
+    def test_get_user_last_transaction_id_returns_last_transaction(self):
+        for n in range(1, 4):
+            timestamp = datetime.now(timezone.utc) + timedelta(days=n)
+            _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
+                self.user_id,
+                self.value * n,
+                bool(n % 2),
+                timestamp,
+            ))
+
+        transaction_id = get_user_last_transaction_id(self.user_id)
+
+        self.assertEqual(
+            transaction_id,
+            _run_sql(self.SQL_FORMAT_GET_TRANSACTION_ID.format(
+                timestamp,
+                self.user_id),
+                True)[0][0]
+        )
