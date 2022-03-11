@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 import decimal
 import random
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv('env/.test_env')
 
+from constants import DECIMAL_PATTERN
 from utils import (
     conn,
     add_user,
@@ -146,3 +148,35 @@ class DBMethodsTestCase(TestCase):
                 True
             )
         )
+
+    def test_decimal_pattern_accepts_only_correct_numbers(self):
+        cases = (
+            ('0', True),
+            ('175', True),
+            ('-776', True),
+            ('+776', True),
+            ('214324,323', True),
+            ('3423332.98765', True),
+            ('-3453553.435', True),
+            ('+3453553.435', True),
+            ('-56324,533', True),
+            ('+56324,533', True),
+            ('+004,533', True),
+            ('', False),
+            ('a;f["pkasfd', False),
+            ('1.22.2', False),
+            ('1.22,2', False),
+            ('1,22.2', False),
+            ('1..2', False),
+            ('1,,2', False),
+            ('1,.2', False),
+            ('a1.2', False),
+            ('--1', False),
+            ('++1', False),
+         )
+        for item, result in cases:
+            with self.subTest(item=item, result=result):
+                self.assertEqual(
+                    bool(re.match(DECIMAL_PATTERN, item)),
+                    result
+                )
