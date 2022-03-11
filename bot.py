@@ -21,6 +21,7 @@ from utils import (
     telegram_id_to_user_id,
     get_user_balance,
     add_transaction,
+    get_user_last_transaction_id,
 )
 
 updater = Updater(
@@ -67,7 +68,7 @@ def enter_the_amount(update, context):
 
 def add_user_transaction(update, context):
     user_input = update.effective_message.text
-    transaction_amount = Decimal(user_input).quantize(
+    transaction_amount = Decimal(user_input.replace(',', '.')).quantize(
         exp=Decimal('0.01'),
         rounding=ROUND_HALF_EVEN,
     )
@@ -79,12 +80,23 @@ def add_user_transaction(update, context):
     add_transaction(
         user_id=get_user_id(update),
         is_income=is_income,
-        value=abs(transaction_amount),
-    )
+        value=abs(transaction_amount,
+    ))
+
+    reply_markup = _convert_buttons_to_reply_markup(((
+         'Cancel transaction',
+         'remove_transaction_{get_user_last_transaction_id(user_id)}'
+     ),))
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='Transaction added'
+        text='Transaction {} added\nYour balance: {}'.format(
+            transaction_amount,
+            get_user_balance(get_user_id(update))
+        ),
+        reply_markup=reply_markup,
     )
+
+
 
 
 updater.dispatcher.add_handler(CommandHandler('start', menu_command))
