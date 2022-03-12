@@ -23,6 +23,7 @@ from utils import (
     add_transaction,
     get_user_last_transaction_id,
     delete_transaction,
+    get_transactions_history,
 )
 
 updater = Updater(
@@ -124,6 +125,21 @@ def remove_transaction(update, context):
         )
 
 
+def get_users_transactions_history(update, context):
+    history = get_transactions_history(get_user_id(update))
+    message = ''
+    for value, is_income, date_time in history:
+        if not is_income:
+            value = '-' + str(value)
+        date_time = date_time.strftime('%Y-%m-%d | %H:%M:%S')
+        message += '{}  |  {}\n'.format(date_time, value)
+    separator = '_' * 35
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f'Your transactions history:\n{separator}\n{message}'
+    )
+
+
 updater.dispatcher.add_handler(CommandHandler('start', menu_command))
 updater.dispatcher.add_handler(
     CallbackQueryHandler(enter_the_amount, pattern=r'add_transaction')
@@ -137,7 +153,9 @@ updater.dispatcher.add_handler(
     CallbackQueryHandler(
         remove_transaction, pattern=r'^remove_transaction_[0-9]+$')
 )
-
+updater.dispatcher.add_handler(
+    CallbackQueryHandler(get_users_transactions_history, pattern=r'get_transactions_history')
+)
 
 if __name__ == '__main__':
     updater.start_polling()
