@@ -124,7 +124,7 @@ class DBMethodsTestCase(TestCase):
 
     def test_get_transactions_history_returns_history_for_specific_user(self):
         sql_code = (
-            f'SELECT value, is_income FROM "transaction" '
+            f'SELECT value, is_income, date_time FROM "transaction" '
             f'WHERE user_id = {self.user_id}'
         )
         self.assertEqual(

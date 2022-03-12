@@ -73,7 +73,7 @@ def get_transactions_history(user_id: int):
     with conn.cursor() as cur:
         cur.execute(
             f'''
-           SELECT value, is_income FROM "transaction"
+           SELECT value, is_income, date_time FROM "transaction"
            WHERE user_id = {user_id};
            '''
         )
