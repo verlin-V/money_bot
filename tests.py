@@ -33,6 +33,13 @@ def _generate_telegram_id():
 
 
 class DBMethodsTestCase(TestCase):
+    SQL_FORMAT_USER_BALANCE = '''
+        SELECT balance FROM "user" WHERE id = {}
+    '''
+    SQL_FORMAT_COUNT_OF_TRANSACTION = '''
+        SELECT COUNT(*) FROM "transaction"
+        WHERE user_id = {} AND is_income = {} AND value = {}
+    '''
     SQL_FORMAT_ADD_TRANSACTION = '''
         INSERT INTO "transaction" (user_id, "value", is_income, date_time)
         VALUES ({}, {}, {}, '{}')
@@ -97,18 +104,17 @@ class DBMethodsTestCase(TestCase):
         )
 
     def test_add_transaction_adds_transaction_to_specific_user(self):
-        sql_code = (
-            f'SELECT COUNT(*) FROM "transaction" '
-            f'WHERE user_id = {self.user_id} AND is_income = {self.is_income} '
-            f'AND value = {self.value}'
+        sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(
+            self.user_id,
+            self.is_income,
+            self.value
         )
         transaction_count = _run_sql(sql_code, True)[0][0]
-        user_balance_sql = (
-            f'SELECT balance FROM "user" WHERE id = {self.user_id}'
-        )
+        user_balance_sql = self.SQL_FORMAT_USER_BALANCE.format(self.user_id)
         user_balance = _run_sql(user_balance_sql, True)[0][0]
 
         add_transaction(self.user_id, self.is_income, self.value)
+
         transaction_count_upd = _run_sql(sql_code, True)[0][0]
         self.assertEqual(transaction_count + 1, transaction_count_upd)
         self.assertEqual(
@@ -134,6 +140,14 @@ class DBMethodsTestCase(TestCase):
             self.is_income,
             timestamp
         ))
+        count_of_transactions_sql = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(
+            self.user_id,
+            self.is_income,
+            self.value
+        )
+        transaction_count = _run_sql(count_of_transactions_sql, True)[0][0]
+        user_balance_sql = self.SQL_FORMAT_USER_BALANCE.format(self.user_id)
+        user_balance = _run_sql(user_balance_sql, True)[0][0]
         transaction_id = _run_sql(
             self.SQL_FORMAT_GET_TRANSACTION_ID.format(timestamp, self.user_id),
             True
@@ -148,6 +162,14 @@ class DBMethodsTestCase(TestCase):
                 ''',
                 True
             )
+        )
+        self.assertEqual(
+            transaction_count - 1,
+            _run_sql(count_of_transactions_sql, True)[0][0]
+        )
+        self.assertEqual(
+            user_balance - self.value * (-1, 1)[int(self.is_income)],
+            _run_sql(user_balance_sql, True)[0][0]
         )
 
     def test_decimal_pattern_accepts_only_correct_numbers(self):

@@ -95,10 +95,20 @@ def delete_transaction(transaction_id: int):
     with conn.cursor() as cur:
         cur.execute(
             f'''
+            SELECT user_id, is_income, value
+            FROM transaction
+            WHERE id = {transaction_id}
+            '''
+        )
+        user_id, is_income, value = cur.fetchone()
+
+        cur.execute(
+            f'''
             DELETE FROM transaction
             WHERE id = {transaction_id}
             '''
         )
+        _update_user_balance(user_id, not is_income, value)
 
 
 def get_user_last_transaction_id(user_id:int):
