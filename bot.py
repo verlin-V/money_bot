@@ -22,6 +22,7 @@ from utils import (
     get_user_balance,
     add_transaction,
     get_user_last_transaction_id,
+    delete_transaction,
 )
 
 updater = Updater(
@@ -32,7 +33,10 @@ dispatcher = updater.dispatcher
 
 
 def get_user_id(update):
-    telegram_id = update.effective_message.from_user['id']
+    if not update.callback_query:
+        telegram_id = update.effective_message.from_user['id']
+    else:
+        telegram_id = update.callback_query.from_user.id
     return telegram_id_to_user_id(telegram_id)
 
 
@@ -60,6 +64,7 @@ def menu_command(update, context):
 
 
 def enter_the_amount(update, context):
+    get_user_id(update)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text='Enter the amount:'
@@ -77,15 +82,16 @@ def add_user_transaction(update, context):
     else:
         is_income = True
 
+    user_id = get_user_id(update)
     add_transaction(
-        user_id=get_user_id(update),
+        user_id=user_id,
         is_income=is_income,
-        value=abs(transaction_amount,
-    ))
+        value=abs(transaction_amount),
+    )
 
     reply_markup = _convert_buttons_to_reply_markup(((
          'Cancel transaction',
-         'remove_transaction_{get_user_last_transaction_id(user_id)}'
+         f'remove_transaction_{get_user_last_transaction_id(user_id)}'
      ),))
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -97,6 +103,25 @@ def add_user_transaction(update, context):
     )
 
 
+def remove_transaction(update, context):
+    try:
+        transaction_id = int(
+            update.callback_query.data.replace('remove_transaction_', '')
+        )
+        delete_transaction(transaction_id)
+
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Your transaction {} has been removed\nYour balance: {}'.format(
+                transaction_id,
+                get_user_balance(get_user_id(update))
+            )
+        )
+    except TypeError:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Transaction has been already deleted'
+        )
 
 
 updater.dispatcher.add_handler(CommandHandler('start', menu_command))
@@ -108,6 +133,11 @@ updater.dispatcher.add_handler(
         Filters.regex(DECIMAL_PATTERN), add_user_transaction
     )
 )
+updater.dispatcher.add_handler(
+    CallbackQueryHandler(
+        remove_transaction, pattern=r'^remove_transaction_[0-9]+$')
+)
+
 
 if __name__ == '__main__':
     updater.start_polling()
