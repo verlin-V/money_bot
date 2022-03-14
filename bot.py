@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    ParseMode,
 )
 from telegram.ext import (
     Updater,
@@ -131,15 +132,16 @@ def get_users_transactions_history(update, context):
     for value, is_income, date_time in history:
         if not is_income:
             value = '-' + str(value)
-        date_time = date_time.strftime('%Y-%m-%d | %H:%M:%S')
-        message += '{}  |  {}\n'.format(date_time, value)
-    separator = '_' * 35
+        date_time = date_time.strftime('%d-%m-%Y %H:%M:%S')
+        message += '<code>{} | {:>13}</code>\n'.format(date_time, value)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f'Your transactions history:\n{separator}\n{message}'
+        text=f'<u><strong>Your transactions history:</strong></u>\n \n{message}',
+        parse_mode=ParseMode.HTML,
     )
 
 
+#todo убрать нахуй is_income
 updater.dispatcher.add_handler(CommandHandler('start', menu_command))
 updater.dispatcher.add_handler(
     CallbackQueryHandler(enter_the_amount, pattern=r'add_transaction')
