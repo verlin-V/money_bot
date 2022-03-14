@@ -38,11 +38,11 @@ class DBMethodsTestCase(TestCase):
     '''
     SQL_FORMAT_COUNT_OF_TRANSACTION = '''
         SELECT COUNT(*) FROM "transaction"
-        WHERE user_id = {} AND is_income = {} AND value = {}
+        WHERE user_id = {} AND value = {}
     '''
     SQL_FORMAT_ADD_TRANSACTION = '''
-        INSERT INTO "transaction" (user_id, "value", is_income, date_time)
-        VALUES ({}, {}, {}, '{}')
+        INSERT INTO "transaction" (user_id, "value", date_time)
+        VALUES ({}, {}, '{}')
     '''
     SQL_FORMAT_GET_TRANSACTION_ID = '''
         SELECT "id" FROM transaction
@@ -59,8 +59,7 @@ class DBMethodsTestCase(TestCase):
             f'SELECT id from "user" WHERE telegram_id = {self.telegram_id}',
             fetch=True
         )[0][0]
-        self.value = decimal.Decimal(random.randrange(1, 999999)) / 100
-        self.is_income = random.choice([True, False])
+        self.value = decimal.Decimal(random.randrange(-999999, 999999)) / 100
 
     def test_add_user_adds_user(self):
         sql_code = 'SELECT COUNT(*) FROM "user"'
@@ -106,25 +105,24 @@ class DBMethodsTestCase(TestCase):
     def test_add_transaction_adds_transaction_to_specific_user(self):
         sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(
             self.user_id,
-            self.is_income,
             self.value
         )
         transaction_count = _run_sql(sql_code, True)[0][0]
         user_balance_sql = self.SQL_FORMAT_USER_BALANCE.format(self.user_id)
         user_balance = _run_sql(user_balance_sql, True)[0][0]
 
-        add_transaction(self.user_id, self.is_income, self.value)
+        add_transaction(self.user_id, self.value)
 
         transaction_count_upd = _run_sql(sql_code, True)[0][0]
         self.assertEqual(transaction_count + 1, transaction_count_upd)
         self.assertEqual(
-            user_balance + self.value * (-1, 1)[int(self.is_income)],
+            user_balance + self.value,
             _run_sql(user_balance_sql, True)[0][0]
         )
 
     def test_get_transactions_history_returns_history_for_specific_user(self):
         sql_code = (
-            f'SELECT value, is_income, date_time FROM "transaction" '
+            f'SELECT value, date_time FROM "transaction" '
             f'WHERE user_id = {self.user_id}'
         )
         self.assertEqual(
@@ -137,12 +135,10 @@ class DBMethodsTestCase(TestCase):
         _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
             self.user_id,
             self.value,
-            self.is_income,
             timestamp
         ))
         count_of_transactions_sql = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(
             self.user_id,
-            self.is_income,
             self.value
         )
         transaction_count = _run_sql(count_of_transactions_sql, True)[0][0]
@@ -168,7 +164,7 @@ class DBMethodsTestCase(TestCase):
             _run_sql(count_of_transactions_sql, True)[0][0]
         )
         self.assertEqual(
-            user_balance - self.value * (-1, 1)[int(self.is_income)],
+            user_balance - self.value,
             _run_sql(user_balance_sql, True)[0][0]
         )
 
@@ -210,7 +206,6 @@ class DBMethodsTestCase(TestCase):
             _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
                 self.user_id,
                 self.value * n,
-                bool(n % 2),
                 timestamp,
             ))
 

@@ -79,16 +79,11 @@ def add_user_transaction(update, context):
         exp=Decimal('0.01'),
         rounding=ROUND_HALF_EVEN,
     )
-    if transaction_amount < 0:
-        is_income = False
-    else:
-        is_income = True
 
     user_id = get_user_id(update)
     add_transaction(
         user_id=user_id,
-        is_income=is_income,
-        value=abs(transaction_amount),
+        value=transaction_amount,
     )
 
     reply_markup = _convert_buttons_to_reply_markup(((
@@ -114,8 +109,7 @@ def remove_transaction(update, context):
 
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text='Your transaction {} has been removed\nYour balance: {}'.format(
-                transaction_id,
+            text='Your transaction has been removed\nYour balance: {}'.format(
                 get_user_balance(get_user_id(update))
             )
         )
@@ -129,9 +123,8 @@ def remove_transaction(update, context):
 def get_users_transactions_history(update, context):
     history = get_transactions_history(get_user_id(update))
     message = ''
-    for value, is_income, date_time in history:
-        if not is_income:
-            value = '-' + str(value)
+    for value, date_time in history:
+        value =  str(value)
         date_time = date_time.strftime('%d-%m-%Y %H:%M:%S')
         message += '<code>{} | {:>13}</code>\n'.format(date_time, value)
     context.bot.send_message(
@@ -141,7 +134,6 @@ def get_users_transactions_history(update, context):
     )
 
 
-#todo убрать нахуй is_income
 updater.dispatcher.add_handler(CommandHandler('start', menu_command))
 updater.dispatcher.add_handler(
     CallbackQueryHandler(enter_the_amount, pattern=r'add_transaction')

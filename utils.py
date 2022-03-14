@@ -41,23 +41,19 @@ def telegram_id_to_user_id(telegram_id: int):
     return add_user(telegram_id)
 
 
-def add_transaction(user_id: int, is_income: bool, value: Decimal):
+def add_transaction(user_id: int, value: Decimal):
     with conn.cursor() as cur:
         cur.execute(
             f'''
-            INSERT INTO "transaction" (user_id, "value", is_income, date_time)
-            VALUES ({user_id}, {value}, {is_income}, CURRENT_TIMESTAMP)
+            INSERT INTO "transaction" (user_id, "value", date_time)
+            VALUES ({user_id}, {value}, CURRENT_TIMESTAMP)
             '''
         )
-    _update_user_balance(user_id, is_income, value)
+    _update_user_balance(user_id, value)
 
 
-def _update_user_balance(user_id: int, is_income: bool, value: Decimal):
-    balance = get_user_balance(user_id)
-    if is_income:
-        balance += value
-    else:
-        balance -= value
+def _update_user_balance(user_id: int, value: Decimal):
+    balance = get_user_balance(user_id) + value
 
     with conn.cursor() as cur:
         cur.execute(
@@ -73,8 +69,8 @@ def get_transactions_history(user_id: int):
     with conn.cursor() as cur:
         cur.execute(
             f'''
-           SELECT value, is_income, date_time FROM "transaction"
-           WHERE user_id = {user_id};
+           SELECT value, date_time FROM "transaction"
+           WHERE user_id = {user_id}
            '''
         )
         return cur.fetchall()
@@ -95,12 +91,12 @@ def delete_transaction(transaction_id: int):
     with conn.cursor() as cur:
         cur.execute(
             f'''
-            SELECT user_id, is_income, value
+            SELECT user_id, value
             FROM transaction
             WHERE id = {transaction_id}
             '''
         )
-        user_id, is_income, value = cur.fetchone()
+        user_id, value = cur.fetchone()
 
         cur.execute(
             f'''
@@ -108,7 +104,7 @@ def delete_transaction(transaction_id: int):
             WHERE id = {transaction_id}
             '''
         )
-        _update_user_balance(user_id, not is_income, value)
+        _update_user_balance(user_id, -value)
 
 
 def get_user_last_transaction_id(user_id:int):
