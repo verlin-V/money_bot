@@ -38,7 +38,7 @@ class DBMethodsTestCase(TestCase):
     '''
     SQL_FORMAT_COUNT_OF_TRANSACTION = '''
         SELECT COUNT(*) FROM "transaction"
-        WHERE user_id = {} AND value = {}
+        WHERE user_id = {}
     '''
     SQL_FORMAT_ADD_TRANSACTION = '''
         INSERT INTO "transaction" (user_id, "value", date_time)
@@ -103,10 +103,8 @@ class DBMethodsTestCase(TestCase):
         )
 
     def test_add_transaction_adds_transaction_to_specific_user(self):
-        sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(
-            self.user_id,
-            self.value
-        )
+        sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(self.user_id
+                                                               )
         transaction_count = _run_sql(sql_code, True)[0][0]
         user_balance_sql = self.SQL_FORMAT_USER_BALANCE.format(self.user_id)
         user_balance = _run_sql(user_balance_sql, True)[0][0]
@@ -121,13 +119,29 @@ class DBMethodsTestCase(TestCase):
         )
 
     def test_get_transactions_history_returns_history_for_specific_user(self):
-        sql_code = (
-            f'SELECT value, date_time FROM "transaction" '
-            f'WHERE user_id = {self.user_id}'
-        )
+        for n in range(1, 4):
+            timestamp = (
+                datetime.now(timezone.utc) +
+                timedelta(days=n*(-1, 1)[n % 2])
+            )
+            _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
+                self.user_id,
+                self.value * n,
+                timestamp,
+            ))
+
+        count_of_transactions = _run_sql(
+            self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(self.user_id),
+            True
+        )[0][0]
+        history = get_transactions_history(self.user_id)
+
+        self.assertEqual(count_of_transactions, len(history))
+
+        list_of_dates = [date for _, date in history]
         self.assertEqual(
-            get_transactions_history(self.user_id),
-            _run_sql(sql_code, True)
+            list_of_dates,
+            sorted(list_of_dates, reverse=True)
         )
 
     def test_delete_transaction_deletes_specific_transaction(self):
@@ -138,8 +152,7 @@ class DBMethodsTestCase(TestCase):
             timestamp
         ))
         count_of_transactions_sql = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(
-            self.user_id,
-            self.value
+            self.user_id
         )
         transaction_count = _run_sql(count_of_transactions_sql, True)[0][0]
         user_balance_sql = self.SQL_FORMAT_USER_BALANCE.format(self.user_id)

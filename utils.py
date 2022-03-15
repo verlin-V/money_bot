@@ -71,6 +71,7 @@ def get_transactions_history(user_id: int):
             f'''
            SELECT value, date_time FROM "transaction"
            WHERE user_id = {user_id}
+           ORDER BY date_time DESC
            '''
         )
         return cur.fetchall()
