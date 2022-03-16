@@ -128,3 +128,14 @@ def get_user_last_transaction_id(user_id:int):
             '''
         )
         return cur.fetchone()[0]
+
+
+def get_transactions_count(user_id:int):
+    with conn.cursor() as cur:
+        cur.execute(
+            f'''
+            SELECT COUNT(*) FROM "transaction"
+            WHERE user_id = {user_id}
+            '''
+        )
+        return cur.fetchone()[0]

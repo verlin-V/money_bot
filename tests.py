@@ -18,6 +18,7 @@ from utils import (
     get_transactions_history,
     delete_transaction,
     get_user_last_transaction_id,
+    get_transactions_count,
 )
 
 
@@ -259,3 +260,12 @@ class DBMethodsTestCase(TestCase):
                 self.user_id),
                 True)[0][0]
         )
+
+    def test_get_transactions_count_returns_correct_count(self):
+        sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(self.user_id)
+        expected_result = _run_sql(sql_code, True)[0][0]
+
+        result = get_transactions_count(self.user_id)
+
+        self.assertEqual(expected_result, result)
+        self.assertTrue(isinstance(result, int))
