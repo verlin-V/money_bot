@@ -1,5 +1,6 @@
 import os
 from decimal import Decimal
+from typing import Union
 
 import psycopg2
 
@@ -65,15 +66,24 @@ def _update_user_balance(user_id: int, value: Decimal):
         )
 
 
-def get_transactions_history(user_id: int):
+def get_transactions_history(
+    user_id: int,
+    limit: Union[int, None] = None,
+    offset: Union[int, None] = None,
+):
+    sql_code = (f'''
+       SELECT value, date_time FROM "transaction"
+       WHERE user_id = {user_id}
+       ORDER BY date_time DESC
+    ''')
+
+    if limit:
+        sql_code += f'LIMIT {limit}\n'
+    if offset:
+        sql_code += f'OFFSET {offset}'
+
     with conn.cursor() as cur:
-        cur.execute(
-            f'''
-           SELECT value, date_time FROM "transaction"
-           WHERE user_id = {user_id}
-           ORDER BY date_time DESC
-           '''
-        )
+        cur.execute(sql_code)
         return cur.fetchall()
 
 

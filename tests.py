@@ -144,6 +144,34 @@ class DBMethodsTestCase(TestCase):
             sorted(list_of_dates, reverse=True)
         )
 
+    def test_get_transactions_history_returns_limited_history_with_offset(self):
+        for n in range(1, 11):
+            _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
+                self.user_id,
+                self.value * n,
+                datetime.now(timezone.utc) + timedelta(seconds=n),
+            ))
+
+        history = get_transactions_history(self.user_id)
+
+        for limit, offset in (
+            (random.randint(1, 9), None),
+            (None, random.randint(1, 9)),
+            (random.randint(1, 9), random.randint(1, 9)),
+        ):
+            with self.subTest(limit=limit, offset=offset):
+                if not limit:
+                    right_bound = len(history)
+                else:
+                    right_bound = (limit or 0) + (offset or 0)
+
+                self.assertEqual(
+                    get_transactions_history(self.user_id, limit, offset),
+                    history[offset or 0:right_bound]
+                )
+
+
+
     def test_delete_transaction_deletes_specific_transaction(self):
         timestamp = datetime.now(timezone.utc)
         _run_sql(self.SQL_FORMAT_ADD_TRANSACTION.format(
