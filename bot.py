@@ -1,7 +1,6 @@
 import os
 from decimal import Decimal, ROUND_HALF_EVEN
 import io
-import fpdf
 
 
 from dotenv import load_dotenv
@@ -57,12 +56,11 @@ def _convert_buttons_to_reply_markup(buttons):
 def menu_command(update, context):
     user_balance = get_user_balance(get_user_id(update))
 
-    BUTTONS = (
+    reply_markup = _convert_buttons_to_reply_markup((
         ('ADD TRANSACTION', 'add_transaction'),
         ('GET 10 LAST TRANSACTIONS', f'get_transactions_history_{LIMIT}_{0}'),
         ('EXPORT ALL TRANSACTIONS', 'get_all_transactions_history')
-    )
-    reply_markup = _convert_buttons_to_reply_markup(BUTTONS)
+    ))
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f'Current balance: {user_balance}',
@@ -73,13 +71,16 @@ def menu_command(update, context):
 def help_command(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='\U0001F4CD For adding transaction just enter the amount '
-             '(if you want to add outcome transaction, '
-             'add "-" before count)\n\n'
-             '\U0001F4CD Use /start for return to menu\n\n'
-             '\U0001F4CD Use /export_transactions to get a file '
-             'with al your transactions history\n\n'
-             '\U0001F643 Enjoy!'
+        text=(
+            '\U0001F4CD For adding transaction just enter the amount '
+            'or use /add_transaction '
+            '(if you want to add outcome transaction, '
+            'add "-" before count)\n\n'
+            '\U0001F4CD Use /start for return to menu\n\n'
+            '\U0001F4CD Use /export_transactions to get a file '
+            'with al your transactions history\n\n'
+            '\U0001F643 Enjoy!'
+        ),
     )
 
 
@@ -87,7 +88,7 @@ def enter_the_amount(update, context):
     get_user_id(update)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='Enter the amount:'
+        text='Enter the amount:',
     )
 
 
@@ -162,7 +163,9 @@ def get_users_transactions_history(update, context):
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f'<u><strong>Your transactions history:</strong></u>\n \n{message}',
+        text=(
+            f'<u><strong>Your transactions history:</strong></u>\n \n{message}'
+        ),
         parse_mode=ParseMode.HTML,
         reply_markup=reply_markup,
     )
@@ -178,14 +181,11 @@ def get_all_users_transactions(update, context):
         )
         for value, date_time in list_of_transactions_row
     )
-    transactions_data = (
-        (date, time, amount) for date, time, amount in list_of_transactions
-    )
+
     transactions_table = TABLE.format(''.join(
-        '<tr><td>{}</td><td>{}</td><td>{}</td>'.format(
-            date, time, amount
-        ) for date, time, amount in list_of_transactions)
-    )
+        '<tr><td>{}</td><td>{}</td><td>{}</td>'.format(date, time, amount)
+        for date, time, amount in list_of_transactions
+    ))
     text = io.StringIO()
 
     text.write(transactions_table)
@@ -193,7 +193,7 @@ def get_all_users_transactions(update, context):
     buf = io.BytesIO()
     buf.write(text.getvalue().encode())
     buf.seek(0)
-    buf.name = '1.html'
+    buf.name = 'my_transactions_history.html'
     context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=buf,
@@ -205,6 +205,9 @@ updater.dispatcher.add_handler(
     CommandHandler('export_transactions', get_all_users_transactions)
 )
 updater.dispatcher.add_handler(CommandHandler('help', help_command))
+updater.dispatcher.add_handler(
+    CommandHandler('add_transaction', enter_the_amount)
+)
 
 updater.dispatcher.add_handler(
     CallbackQueryHandler(enter_the_amount, pattern=r'add_transaction')
