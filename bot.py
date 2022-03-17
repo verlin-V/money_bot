@@ -3,6 +3,7 @@ from decimal import Decimal, ROUND_HALF_EVEN
 import io
 import fpdf
 
+
 from dotenv import load_dotenv
 from telegram import (
     InlineKeyboardButton,
@@ -66,6 +67,19 @@ def menu_command(update, context):
         chat_id=update.effective_chat.id,
         text=f'Current balance: {user_balance}',
         reply_markup=reply_markup,
+    )
+
+
+def help_command(update, context):
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text='\U0001F4CD For adding transaction just enter the amount '
+             '(if you want to add outcome transaction, '
+             'add "-" before count)\n\n'
+             '\U0001F4CD Use /start for return to menu\n\n'
+             '\U0001F4CD Use /export_transactions to get a file '
+             'with al your transactions history\n\n'
+             '\U0001F643 Enjoy!'
     )
 
 
@@ -187,6 +201,11 @@ def get_all_users_transactions(update, context):
 
 
 updater.dispatcher.add_handler(CommandHandler('start', menu_command))
+updater.dispatcher.add_handler(
+    CommandHandler('export_transactions', get_all_users_transactions)
+)
+updater.dispatcher.add_handler(CommandHandler('help', help_command))
+
 updater.dispatcher.add_handler(
     CallbackQueryHandler(enter_the_amount, pattern=r'add_transaction')
 )
