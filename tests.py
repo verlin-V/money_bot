@@ -104,8 +104,7 @@ class DBMethodsTestCase(TestCase):
         )
 
     def test_add_transaction_adds_transaction_to_specific_user(self):
-        sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(self.user_id
-                                                               )
+        sql_code = self.SQL_FORMAT_COUNT_OF_TRANSACTION.format(self.user_id)
         transaction_count = _run_sql(sql_code, True)[0][0]
         user_balance_sql = self.SQL_FORMAT_USER_BALANCE.format(self.user_id)
         user_balance = _run_sql(user_balance_sql, True)[0][0]

@@ -122,9 +122,9 @@ def get_user_last_transaction_id(user_id:int):
     with conn.cursor() as cur:
         cur.execute(
             f'''
-               SELECT id FROM transaction
-               WHERE user_id = {user_id}
-               ORDER BY id DESC LIMIT 1
+            SELECT id FROM transaction
+            WHERE user_id = {user_id}
+            ORDER BY id DESC LIMIT 1
             '''
         )
         return cur.fetchone()[0]
