@@ -1,5 +1,7 @@
 import os
 from decimal import Decimal, ROUND_HALF_EVEN
+import io
+import fpdf
 
 from dotenv import load_dotenv
 from telegram import (
@@ -17,7 +19,7 @@ from telegram.ext import (
 
 load_dotenv('env/.env')
 
-from constants import DECIMAL_PATTERN
+from constants import DECIMAL_PATTERN, LIMIT, TABLE
 from utils import (
     telegram_id_to_user_id,
     get_user_balance,
@@ -25,6 +27,7 @@ from utils import (
     get_user_last_transaction_id,
     delete_transaction,
     get_transactions_history,
+    get_transactions_count,
 )
 
 updater = Updater(
@@ -55,7 +58,8 @@ def menu_command(update, context):
 
     BUTTONS = (
         ('ADD TRANSACTION', 'add_transaction'),
-        ('GET TRANSACTIONS HISTORY', 'get_transactions_history'),
+        ('GET 10 LAST TRANSACTIONS', f'get_transactions_history_{LIMIT}_{0}'),
+        ('EXPORT ALL TRANSACTIONS', 'get_all_transactions_history')
     )
     reply_markup = _convert_buttons_to_reply_markup(BUTTONS)
     context.bot.send_message(
@@ -121,16 +125,64 @@ def remove_transaction(update, context):
 
 
 def get_users_transactions_history(update, context):
-    history = get_transactions_history(get_user_id(update))
+    limit, offset = map(
+        int,
+        update.callback_query.data.replace(
+            'get_transactions_history_', ''
+        ).split('_')
+    )
+
+    reply_markup = None
+    if get_transactions_count(get_user_id(update)) > limit+offset:
+        reply_markup = _convert_buttons_to_reply_markup(((
+            'Next 10 Transactions >>',
+            f'get_transactions_history_{limit}_{offset + limit}'
+         ),))
+
+    history = get_transactions_history(get_user_id(update), limit, offset)
     message = ''
     for value, date_time in history:
-        value =  str(value)
+        value = str(value)
         date_time = date_time.strftime('%d-%m-%Y %H:%M:%S')
         message += '<code>{} | {:>13}</code>\n'.format(date_time, value)
+
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f'<u><strong>Your transactions history:</strong></u>\n \n{message}',
         parse_mode=ParseMode.HTML,
+        reply_markup=reply_markup,
+    )
+
+
+def get_all_users_transactions(update, context):
+    list_of_transactions_row = get_transactions_history(get_user_id(update))
+    list_of_transactions = tuple(
+        (
+            date_time.strftime('%d-%m-%Y'),
+            date_time.strftime('%H:%M:%S'),
+            str(value)
+        )
+        for value, date_time in list_of_transactions_row
+    )
+    transactions_data = (
+        (date, time, amount) for date, time, amount in list_of_transactions
+    )
+    transactions_table = TABLE.format(''.join(
+        '<tr><td>{}</td><td>{}</td><td>{}</td>'.format(
+            date, time, amount
+        ) for date, time, amount in list_of_transactions)
+    )
+    text = io.StringIO()
+
+    text.write(transactions_table)
+    text.seek(0)
+    buf = io.BytesIO()
+    buf.write(text.getvalue().encode())
+    buf.seek(0)
+    buf.name = '1.html'
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=buf,
     )
 
 
@@ -148,8 +200,18 @@ updater.dispatcher.add_handler(
         remove_transaction, pattern=r'^remove_transaction_[0-9]+$')
 )
 updater.dispatcher.add_handler(
-    CallbackQueryHandler(get_users_transactions_history, pattern=r'get_transactions_history')
+    CallbackQueryHandler(
+        get_users_transactions_history,
+        pattern=r'^get_transactions_history_[0-9]+\_[0-9]+$'
+    )
 )
+updater.dispatcher.add_handler(
+    CallbackQueryHandler(
+        get_all_users_transactions,
+        pattern=r'get_all_transactions_history'
+    )
+)
+
 
 if __name__ == '__main__':
     updater.start_polling()
